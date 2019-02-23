@@ -14,7 +14,7 @@ subscriber-number,sinr,cqi,lac,sector-id,earfcn,phy-cellid,enb-id,access-technol
 
 MSG_INTERVAL=300 #Send SMS interval in sec
 GPS_INTERVAL=1 #GPS poll rate (sec)
-TEMP_INTERVAL=1 #DS18B20 poll rate (sec)
+TEMP_INTERVAL=5 #DS18B20 poll rate (sec)
 
 
 class ds(object):

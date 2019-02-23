@@ -13,6 +13,9 @@ current-operator,current-cellid,rsrq,rsrp,session-uptime,
 subscriber-number,sinr,cqi,lac,sector-id,earfcn,phy-cellid,enb-id,access-technology"""
 
 MSG_INTERVAL=300 #Send SMS interval in sec
+GPS_INTERVAL=1 #GPS poll rate (sec)
+TEMP_INTERVAL=1 #DS18B20 poll rate (sec)
+
 
 class ds(object):
         """
@@ -235,12 +238,12 @@ def main(col):
     next_msg=time.time()+MSG_INTERVAL
 
     #Poller for DS18B20 tempreature sensors
-    tempr = Poller(ds(),1)
+    tempr = Poller(ds(),TEMP_INTERVAL)
     tempr.daemon=True
     tempr.start()
 
-    #Poller for GPS dongle
-    gpsp = Poller(usbgps(),1)
+    #Poller for GPS 
+    gpsp = Poller(usbgps(),GPS_INTERVAL)
     gpsp.daemon = True
     gpsp.start()
 

@@ -124,7 +124,7 @@ class Poller(threading.Thread):
 			#while True:
 			while self.session.running():
                 		self.current_value = self.session.next()
-                	time.sleep(1) # tune this, you might not get values that quickly
+                	time.sleep(frequency) # tune this, you might not get values that quickly
 		except Exception as e:
 			print(e)
 			pass

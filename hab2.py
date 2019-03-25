@@ -23,111 +23,111 @@ LOG_FILE_MAXLINES = 1000  # Max lines per log file
 
 
 class ds(object):
-        """
-        Reads sensors from path
-        Returns temperature readings in Celsius
-        """
-        def __init__(self,path='/sys/bus/w1/devices/??-*'):
-                self._running=True
-                self._sensors=glob.glob(path+'/w1_slave')
-                if len(self._sensors)==0:
-                        self._running=False
-        def __str__(self):
-                return(str(self.run())[1:-1].replace("'",""))
-        def running(self):
-                return(self._running)
-        def _read_sensor(self,sensor):
-                s=sensor[20:-9]
-                try:
-                        f = open(sensor, 'r')
-                except IOError:
-                        return{s: 'NaN'}
-                else:
-                        lines=f.readlines()
-                        f.close()
-                        if lines[0].strip()[-3:] != 'YES':
-                                return{s: 'Err'}
-                        else:
-                                return{s: str(round(float(lines[1].strip()[lines[1].find('t=')+2:])/1000,1))}
-        def next(self):
-                readout={}
-                for sensor in self._sensors:
-                        readout.update(self._read_sensor(sensor))
-                return(readout)
-        def deviceIds(self):
-                dev=list(self.next())
-                return(dev)
+    """
+    Reads sensors from path
+    Returns temperature readings in Celsius
+    """
+    def __init__(self,path='/sys/bus/w1/devices/??-*'):
+        self._running=True
+        self._sensors=glob.glob(path+'/w1_slave')
+        if len(self._sensors)==0:
+                self._running=False
+    def __str__(self):
+        return(str(self.run())[1:-1].replace("'",""))
+    def running(self):
+        return(self._running)
+    def _read_sensor(self,sensor):
+        s=sensor[20:-9]
+        try:
+            f = open(sensor, 'r')
+        except IOError:
+            return{s: 'NaN'}
+        else:
+            lines=f.readlines()
+            f.close()
+            if lines[0].strip()[-3:] != 'YES':
+                return{s: 'Err'}
+            else:
+                return{s: str(round(float(lines[1].strip()[lines[1].find('t=')+2:])/1000,1))}
+    def next(self):
+            readout={}
+            for sensor in self._sensors:
+                    readout.update(self._read_sensor(sensor))
+            return(readout)
+    def deviceIds(self):
+            dev=list(self.next())
+            return(dev)
 class usbgps(object):
-        def __init__(self, port="/dev/ttyACM0", baudrate=9600, timeout=1):
-                self._running=True
-                self._gpsdata={}
-                try:
-                        self._ser=serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
-                        self._running=True
-                except Exception as exc:
-                        print(exc)
-			self._running=False
-			#raise StopIteration
-        def _read_line(self):
-                data={}
-		if self.running()==False:
-			return(data)
-		try:
-	                ln=self._ser.readline()
-		except Exception as exc:
-			print(exc)
-			self._running=False
-			#raise StopIteration
-		else:
-	                l=ln.split(",")
-        	        data['$id']=l[0]
-                	if l[0]=='$GPGGA':
-                        	l=ln.split(",")
-                        	data['tim']=l[1].split(".")[0]
-                        	data['lat']=self._to_dec(l[2]+l[3])
-                        	data['lon']=self._to_dec(l[4]+l[5])
-                        	data['asl']=l[9]
-                        	data['siq']=l[6]
-                	if l[0]=='$GPVTG':
-                        	l=ln.split(",")
-                        	data['spd']=l[7]+l[8]
-	                if l[0]=='$GPRMC':
-        	                l=ln.split(",")
-                	        data['dir']=l[8]
-                        	data['dat']=l[9]
-                return(data)
-        def _to_dec(self,coord):
-		c=coord[0:-1].split(".")
-		deg=int(c[0][:-2])
-		min=float(c[0][-2:]+"."+c[1])/60
-		return("{}{}".format(round(deg+min,5), coord[-1]))
-	def running(self):
-                return(self._running)
+    def __init__(self, port="/dev/ttyACM0", baudrate=9600, timeout=1):
+        self._running=True
+        self._gpsdata={}
+        try:
+            self._ser=serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
+            self._running=True
+        except Exception as exc:
+            print(exc)
+            self._running=False
+            #raise StopIteration
+    def _read_line(self):
+        data={}
+        if self.running()==False:
+            return(data)
+        try:
+            ln=self._ser.readline()
+        except Exception as exc:
+            print(exc)
+            self._running=False
+            #raise StopIteration
+        else:
+            l=ln.split(",")
+            data['$id']=l[0]
+            if l[0]=='$GPGGA':
+                l=ln.split(",")
+                data['tim']=l[1].split(".")[0]
+                data['lat']=self._to_dec(l[2]+l[3])
+                data['lon']=self._to_dec(l[4]+l[5])
+                data['asl']=l[9]
+                data['siq']=l[6]
+            if l[0]=='$GPVTG':
+                l=ln.split(",")
+                data['spd']=l[7]+l[8]
+            if l[0]=='$GPRMC':
+                l=ln.split(",")
+                data['dir']=l[8]
+                data['dat']=l[9]
+        return(data)
+    def _to_dec(self,coord):
+        c=coord[0:-1].split(".")
+        deg=int(c[0][:-2])
+        min=float(c[0][-2:]+"."+c[1])/60
+        return("{}{}".format(round(deg+min,5), coord[-1]))
+    def running(self):
+        return(self._running)
 
-        def next(self):
-                ln={}
-                if self.running:
-                        ln=self._read_line()
-                        while ln['$id']!='$GPGLL':
-                                ln.update(self._read_line())
-			del ln['$id']
-                return(ln)
+    def next(self):
+        ln={}
+        if self.running:
+                ln=self._read_line()
+                while ln['$id']!='$GPGLL':
+                        ln.update(self._read_line())
+                del ln['$id']
+        return(ln)
 class Poller(threading.Thread):
-	def __init__(self,session,frequency=1):
-		threading.Thread.__init__(self)
-		self.session = session
-		self.current_value = {}
-	def get_current_value(self):
-		return self.current_value
-	def run(self):
-		try:
-			#while True:
-			while self.session.running():
-                		self.current_value = self.session.next()
-                	time.sleep(frequency) # tune this, you might not get values that quickly
-		except Exception as e:
-			print(e)
-			pass
+    def __init__(self,session,frequency=1):
+        threading.Thread.__init__(self)
+        self.session = session
+        self.current_value = {}
+    def get_current_value(self):
+        return self.current_value
+    def run(self):
+        try:
+            #while True:
+            while self.session.running():
+                    self.current_value = self.session.next()
+            time.sleep(frequency) # tune this
+        except Exception as e:
+            print(e)
+            pass
 class logger(object):
     def __init__(self,mask="hab_*.csv", maxlines=0, header=""):
         self._line_count = 0
@@ -141,7 +141,7 @@ class logger(object):
                 with open(self._file_name, "a") as f:
                     f.write(self._header+"\n")
         except:
-		self._running=False
+            self._running=False
     def write(self,line):
         with open(self._file_name, "a") as f:
             f.write(line+"\n")
@@ -155,7 +155,7 @@ class logger(object):
                     with open(self._file_name, "a") as f:
                         f.write(self._header+"\n")
     def running(self):
-	return self._running
+        return self._running
 
 class mt(object):
     def __init__(self, target='192.168.88.1',
@@ -185,9 +185,9 @@ class mt(object):
     def send_sms(self,phone="29413099",message="test"):
         cmd='/tool sms send lte1 "{}" message="{}"'.format(phone,message)
         stdin,stdout,stderr = self._ssh.exec_command(cmd)
-	time.sleep(.5)
-	print("Sending to {}\n {}".format(phone,message))
-	stdin,stdout,stderr = self._ssh.exec_command('/')
+        time.sleep(.5)
+        print("Sending to {}\n{}".format(phone,message))
+        stdin,stdout,stderr = self._ssh.exec_command('/')
 
 class pinger(object):
     def __init__(self,server='8.8.8.8',count=3, wait_sec=2):
@@ -271,10 +271,9 @@ def main(col):
         tempr.start()
     except Exeption as e:
         status_msg=msg_templ.format(status_msg,'Temperature error:', e)
-	pass
     else:
         status_msg=msg_templ.format(status_msg,'Temperature: ', tempr.session.running())
-	pass
+
     #Poller for GPS dongle
     gpsp = Poller(usbgps(),TEMP_INTERVAL)
     gpsp.daemon = True
@@ -282,11 +281,8 @@ def main(col):
         gpsp.start()
     except Exeption as e:
         status_msg=msg_templ.format(status_msg,'GPS error:', e)
-	pass
     else:
         status_msg=msg_templ.format(status_msg,'GPS: ', gpsp.session.running())
-	pass
-
     #Poller for Ping
     png = Poller(pinger(server=PING_ADDRESS), PING_INTERVAL)
     png.daemon = True
@@ -294,10 +290,9 @@ def main(col):
         png.start()
     except Exeption as e:
         status_msg="{}\n{}".format(status_msg,'Ping error:', e)
-	pass
+
     else:
         status_msg=msg_templ.format(status_msg,'Ping: ', png.session.running())
-	pass
 
     #add temperature sensors to CSC
     columns=columns+tempr.session.deviceIds()
@@ -311,22 +306,22 @@ def main(col):
             try:
                 r=r+(l[i].replace(",",";"))+","
             except Exception as e:
-		print(e)
+                print(e)
                 r=r+"N/A,"
         print(r)
-        
-	log.write(r)
+
+        log.write(r)
         if time.time()>next_msg:
             msg='http://maps.google.com?q={},{} asl:{} spd:{}'.format(l['lat'],l['lon'],l['asl'],l['spd'])
-	    m.send_sms(phone=MSG_PHONE, message=msg)
+            m.send_sms(phone=MSG_PHONE, message=msg)
             next_msg=time.time()+MSG_INTERVAL
         time.sleep(5)
-    #for k,v in l.items():
-    #    print("{}: {}").format(k,v)
+        #for k,v in l.items():
+        #    print("{}: {}").format(k,v)
 
 
 if __name__ == '__main__':
-	try:
-        	main(COL.replace("\n",""))
-	except KeyboardInterrupt:
-        	sys.exit(0)
+    try:
+        main(COL.replace("\n",""))
+    except KeyboardInterrupt:
+        sys.exit(0)
